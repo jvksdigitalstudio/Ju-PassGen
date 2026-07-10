@@ -1,0 +1,257 @@
+name: 🔐 JU Password Generator — Build & Release
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      release_notes:
+        description: 'Notas del release'
+        required: false
+        default: 'Nueva versión'
+
+# ─────────────────────────────────────────────────────────────────
+# JOB 1: Debug APK (siempre, en cada push)
+# ─────────────────────────────────────────────────────────────────
+jobs:
+  build-debug:
+    name: 🛠 Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ☕ JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: 📦 Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts','**/gradle-wrapper.properties','**/libs.versions.toml') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: 🔧 Bootstrap Gradle Wrapper
+        run: |
+          if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+            echo "Descargando gradle-wrapper.jar..."
+            curl -sL "https://github.com/gradle/gradle/raw/v8.9.0/gradle/wrapper/gradle-wrapper.jar" \
+              -o gradle/wrapper/gradle-wrapper.jar
+          fi
+          chmod +x gradlew
+
+      - name: 🔤 Descargar fuentes (Orbitron + Space Mono)
+        run: |
+          pip install fonttools brotli --quiet
+
+          FONT_DIR="app/src/main/res/font"
+          mkdir -p "$FONT_DIR"
+
+          CSS=$(curl -sA "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36" \
+            "https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Space+Mono:ital,wght@0,400;0,700&display=swap")
+
+          echo "$CSS" | grep -oP "https://fonts\.gstatic\.com[^)']+" | sort -u | while read -r url; do
+            fname=$(echo "$url" | md5sum | cut -c1-8)
+            curl -sL "$url" -o "/tmp/font_${fname}.woff2"
+          done
+
+          python3 << 'PYTHON'
+          import os, sys
+          from fontTools.ttLib import TTFont
+
+          font_dir = "app/src/main/res/font"
+          name_map = {
+              "Orbitron": {400:"orbitron_regular",500:"orbitron_medium",600:"orbitron_semibold",700:"orbitron_bold",900:"orbitron_black"},
+              "Space Mono": {400:"space_mono_regular",700:"space_mono_bold"},
+          }
+          converted = 0
+          for wf in os.listdir("/tmp"):
+              if not wf.endswith(".woff2"): continue
+              try:
+                  font=TTFont(f"/tmp/{wf}"); family=""; weight=400; style="normal"
+                  for rec in font["name"].names:
+                      try:
+                          v=rec.toUnicode()
+                          if rec.nameID==1: family=v
+                          elif rec.nameID==2:
+                              s=v.lower()
+                              if "italic" in s: style="italic"
+                              if "black" in s: weight=900
+                              elif "bold" in s: weight=700
+                              elif "semibold" in s: weight=600
+                              elif "medium" in s: weight=500
+                      except: pass
+                  if style=="italic": continue
+                  if family in name_map and weight in name_map[family]:
+                      dst=f"{font_dir}/{name_map[family][weight]}.ttf"
+                      font.save(dst); print(f"  ✓ {family} {weight} → {name_map[family][weight]}.ttf")
+                      converted+=1
+              except: pass
+          print(f"Total: {converted} fuentes convertidas")
+          PYTHON
+
+          echo "=== Fuentes en res/font ==="
+          ls -lh "$FONT_DIR/"
+
+          for name in orbitron_regular orbitron_medium orbitron_semibold orbitron_bold orbitron_black space_mono_regular space_mono_bold; do
+            if [ ! -f "$FONT_DIR/${name}.ttf" ]; then
+              echo "WARN: falta ${name}.ttf — se usará fuente del sistema"
+            fi
+          done
+
+      - name: 🏗 Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace --no-daemon
+
+      - name: 📤 Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: JU-PassGen-Debug-${{ github.sha }}
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 7
+
+# ─────────────────────────────────────────────────────────────────
+# JOB 2: Release AAB firmado (solo push a main con secrets)
+# ─────────────────────────────────────────────────────────────────
+  build-release:
+    name: 🚀 Release AAB (firmado)
+    runs-on: ubuntu-latest
+    needs: build-debug
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ☕ JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: 📦 Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts','**/gradle-wrapper.properties','**/libs.versions.toml') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: 🔧 Bootstrap Gradle Wrapper
+        run: |
+          if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+            curl -sL "https://github.com/gradle/gradle/raw/v8.9.0/gradle/wrapper/gradle-wrapper.jar" \
+              -o gradle/wrapper/gradle-wrapper.jar
+          fi
+          chmod +x gradlew
+
+      - name: 🔤 Descargar fuentes
+        run: |
+          pip install fonttools brotli --quiet
+          FONT_DIR="app/src/main/res/font"
+          mkdir -p "$FONT_DIR"
+          CSS=$(curl -sA "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36" \
+            "https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Space+Mono:ital,wght@0,400;0,700&display=swap")
+          echo "$CSS" | grep -oP "https://fonts\.gstatic\.com[^)']+" | sort -u | while read -r url; do
+            fname=$(echo "$url" | md5sum | cut -c1-8)
+            curl -sL "$url" -o "/tmp/font_${fname}.woff2"
+          done
+          python3 << 'PYTHON'
+          import os
+          from fontTools.ttLib import TTFont
+          name_map = {
+              "Orbitron": {400:"orbitron_regular",500:"orbitron_medium",600:"orbitron_semibold",700:"orbitron_bold",900:"orbitron_black"},
+              "Space Mono": {400:"space_mono_regular",700:"space_mono_bold"},
+          }
+          for wf in os.listdir("/tmp"):
+              if not wf.endswith(".woff2"): continue
+              try:
+                  font=TTFont(f"/tmp/{wf}"); family=""; weight=400; style="normal"
+                  for rec in font["name"].names:
+                      try:
+                          v=rec.toUnicode()
+                          if rec.nameID==1: family=v
+                          elif rec.nameID==2:
+                              s=v.lower()
+                              if "italic" in s: style="italic"
+                              if "black" in s: weight=900
+                              elif "bold" in s: weight=700
+                              elif "semibold" in s: weight=600
+                              elif "medium" in s: weight=500
+                      except: pass
+                  if style=="italic": continue
+                  if family in name_map and weight in name_map[family]:
+                      dst=f"app/src/main/res/font/{name_map[family][weight]}.ttf"
+                      font.save(dst); print(f"✓ {family} {weight}")
+              except: pass
+          PYTHON
+          ls -lh "$FONT_DIR/"
+
+      - name: 🔑 Decodificar Keystore
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 --decode > app/keystore.jks
+            echo "✓ Keystore decodificado"
+          else
+            echo "Sin keystore — release sin firmar"
+          fi
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
+
+      - name: 🏗 Build Release AAB
+        run: ./gradlew bundleRelease --no-daemon
+        env:
+          KEY_ALIAS:             ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD:          ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD:        ${{ secrets.STORE_PASSWORD }}
+          ADMOB_APP_ID:          ${{ secrets.ADMOB_APP_ID }}
+          ADMOB_BANNER_ID:       ${{ secrets.ADMOB_BANNER_ID }}
+          ADMOB_INTERSTITIAL_ID: ${{ secrets.ADMOB_INTERSTITIAL_ID }}
+
+      - name: 🏗 Build Release APK
+        run: ./gradlew assembleRelease --no-daemon
+        env:
+          KEY_ALIAS:             ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD:          ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD:        ${{ secrets.STORE_PASSWORD }}
+          ADMOB_APP_ID:          ${{ secrets.ADMOB_APP_ID }}
+          ADMOB_BANNER_ID:       ${{ secrets.ADMOB_BANNER_ID }}
+          ADMOB_INTERSTITIAL_ID: ${{ secrets.ADMOB_INTERSTITIAL_ID }}
+
+      - name: 📤 Upload Release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: JU-PassGen-Release-AAB-${{ github.sha }}
+          path: app/build/outputs/bundle/release/*.aab
+          retention-days: 30
+
+      - name: 📤 Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: JU-PassGen-Release-APK-${{ github.sha }}
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 30
+
+      - name: 🏷 Crear GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name:   v1.0.${{ github.run_number }}
+          name:       "JU PassGen v1.0.${{ github.run_number }}"
+          body:       ${{ github.event.inputs.release_notes || 'Release automático' }}
+          files: |
+            app/build/outputs/bundle/release/*.aab
+            app/build/outputs/apk/release/*.apk
+          draft:      false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

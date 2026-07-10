@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Tema base para la Activity.
+        Compose toma el control visual completo desde Theme.kt.
+        Usamos Theme.AppCompat.NoActionBar que siempre está disponible.
+    -->
+    <style name="Theme.JUPassGen" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/background_dark</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+    </style>
+</resources>

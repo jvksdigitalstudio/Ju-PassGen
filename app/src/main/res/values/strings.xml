@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">JU Password Generator</string>
+    <string name="badge">SEGURO · GRATIS · INSTANTÁNEO</string>
+    <string name="subtitle">Genera contraseñas seguras sin conexión</string>
+
+    <!-- Generator -->
+    <string name="generate">⚡ GENERAR</string>
+    <string name="click_generate">Toca GENERAR para crear una contraseña</string>
+    <string name="strength">Fortaleza</string>
+    <string name="length">Longitud</string>
+    <string name="word_count">Palabras</string>
+    <string name="autocopy">Auto-copiar</string>
+    <string name="copied">¡Copiado!</string>
+    <string name="clipboard_cleared">Portapapeles limpiado</string>
+
+    <!-- Opciones de caracteres -->
+    <string name="uppercase">Mayúsculas</string>
+    <string name="lowercase">Minúsculas</string>
+    <string name="numbers">Números</string>
+    <string name="symbols">Símbolos</string>
+    <string name="no_ambiguous">Sin Ambiguos</string>
+    <string name="pronounceable">Pronunciable</string>
+    <string name="passphrase">Passphrase</string>
+    <string name="write_mode">Escribir</string>
+
+    <!-- Strength levels -->
+    <string name="strength_very_weak">MUY DÉBIL</string>
+    <string name="strength_weak">DÉBIL</string>
+    <string name="strength_fair">REGULAR</string>
+    <string name="strength_strong">FUERTE</string>
+    <string name="strength_max">FORT. MÁXIMA</string>
+
+    <!-- Stats -->
+    <string name="bits_entropy">Bits Entropía</string>
+    <string name="crack_time">Tiempo Descifrar</string>
+    <string name="possible_chars">Chars Posibles</string>
+
+    <!-- History -->
+    <string name="history_title">Historial</string>
+    <string name="history_empty">Sin contraseñas generadas aún</string>
+    <string name="clear">🗑 LIMPIAR</string>
+
+    <!-- Decrypt -->
+    <string name="decrypt_title">Descifrar Archivo</string>
+    <string name="decrypt_placeholder">Selecciona un archivo .enc para descifrar</string>
+    <string name="decrypt_button">🔓 DESCIFRAR</string>
+    <string name="decrypt_drop_label">Toca para seleccionar archivo .enc</string>
+    <string name="decrypt_password_hint">Contraseña del archivo</string>
+    <string name="decrypt_success">Descifrado exitoso</string>
+    <string name="decrypt_error_wrong_pwd">Contraseña incorrecta</string>
+    <string name="decrypt_error_invalid">Archivo no válido o corrupto</string>
+
+    <!-- Save -->
+    <string name="save">💾 GUARDAR</string>
+    <string name="save_as_txt">Guardar como TXT</string>
+    <string name="save_as_pdf">Guardar como PDF</string>
+    <string name="save_as_zip">Guardar como ZIP cifrado</string>
+    <string name="save_password_optional">Contraseña (opcional)</string>
+    <string name="saved_ok">Archivo guardado correctamente</string>
+    <string name="save_error">Error al guardar el archivo</string>
+
+    <!-- Language selector -->
+    <string name="lang_es">🇪🇸 Español</string>
+    <string name="lang_en">🇬🇧 English</string>
+    <string name="lang_pt">🇧🇷 Português</string>
+    <string name="lang_fr">🇫🇷 Français</string>
+    <string name="lang_de">🇩🇪 Deutsch</string>
+
+    <!-- Theme -->
+    <string name="theme_dark">Tema Oscuro</string>
+    <string name="theme_light">Tema Claro</string>
+
+    <!-- Footer / Legal -->
+    <string name="privacy_policy">Política de Privacidad</string>
+    <string name="terms_of_use">Términos de Uso</string>
+    <string name="security_note">100% local · Sin servidores · Sin almacenamiento</string>
+
+    <!-- Accesibilidad -->
+    <string name="cd_reveal_password">Mostrar/ocultar contraseña</string>
+    <string name="cd_copy_password">Copiar contraseña</string>
+    <string name="cd_toggle_theme">Cambiar tema</string>
+    <string name="cd_select_language">Seleccionar idioma</string>
+</resources>

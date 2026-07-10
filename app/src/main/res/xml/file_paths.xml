@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Archivos generados por la app en caché interna -->
+    <cache-path name="cached_files" path="." />
+    <!-- Archivos en almacenamiento externo (API < 29) -->
+    <external-path name="external_files" path="." />
+    <!-- Archivos en directorio interno de la app -->
+    <files-path name="app_files" path="." />
+</paths>
